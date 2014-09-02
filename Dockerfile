@@ -28,10 +28,7 @@ RUN apt-get install -y -q build-essential
 RUN apt-get install -y -q python-pyaudio
 RUN apt-get install -y -q openjdk-7-jre-headless
 RUN apt-get install -y -q strace
-
-ADD lein /usr/local/bin/lein
-RUN chmod 755 /usr/local/bin/lein
-RUN LEINROOT=true lein
+RUN apt-get install -y -q man
 
 WORKDIR /
 
@@ -48,15 +45,31 @@ WORKDIR /src/fsmnlp-tutorial/3rdparty
 
 RUN tar xf openfst-1.3.2.tar.gz
 WORKDIR /src/fsmnlp-tutorial/3rdparty/openfst-1.3.2
+
 RUN ./configure --enable-compact-fsts --enable-const-fsts --enable-far --enable-lookahead-fsts --enable-pdt
 RUN make
 RUN make install
 
+WORKDIR /src/fsmnlp-tutorial/3rdparty
+
 RUN tar xf opengrm-ngram-1.0.3.tar.gz
+
+WORKDIR /src/fsmnlp-tutorial/3rdparty/opengrm-ngram-1.0.3/src/bin
+RUN cp ngramrandgen.cc ngramrandgen.cc.orig
+RUN cat ngramrandgen.cc.orig | awk 'NR==32{print "#include <sys/types.h>\n#include <unistd.h>\n"}1' > ngramrandgen.cc
+
 WORKDIR /src/fsmnlp-tutorial/3rdparty/opengrm-ngram-1.0.3
 RUN ./configure
 RUN make
 RUN make install
+
+WORKDIR /src/fsmnlp-tutorial/src
+RUN make
+
+RUN ldconfig
+
+WORKDIR /src/fsmnlp-tutorial/script
+RUN mkdir -p toy
 
 # RUN hg clone https://code.google.com/p/phonetisaurus -r 5431b8169d34
 
@@ -90,6 +103,10 @@ RUN make install
 
 # # #sudo pip install -r jasper-client/client/requirements.txt
 # # RUN pip install APScheduler CherryPy PyYAML Pykka RPi.GPIO argparse beautifulsoup4 facebook-sdk feedparser numpy pifacedigitalio --allow-external pygame python-dateutil python-mpd pytz quantities semantic six ws4py wsgiref requests sphinx
+
+ADD lein /usr/local/bin/lein
+RUN chmod 755 /usr/local/bin/lein
+RUN LEINROOT=true lein
 
 # # WORKDIR /jasper-client/client
 # # RUN sed -i'.bak' 's/from apscheduler.scheduler import Scheduler/from apscheduler.schedulers.blocking import BlockingScheduler/' notifier.py
